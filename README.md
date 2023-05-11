@@ -1,6 +1,7 @@
 # Pico Sequencer - four track generative MIDI sequencer based on Raspberry Pi Pico
 
-This sequencer is inspired by quite a few I've used before but mostly by Monome's Kria. It can be used as a simple 1-16 step sequencer with four tracks. There are actually six independent sequencers per track. Each sequencer has its own length which defaults to 16 steps on power up. 
+This sequencer is inspired by quite a few I've used before but mostly by Monome's Kria. It can be used as a simple one to sixteen step sequencer with four tracks but what makes it generative is there are actually six independent sequencers per track.
+Each sequencer has its own length which defaults to 16 steps on power up. 
 Sequencer step values are edited by rotating the encoder for that step. Press a step encoder to set the sequence length e.g. press encoder 8 to make the sequence 8 steps. Each sequencer has its own clock rate which defaults to 1x (1 beat) but can range from 8 times faster to divided by 16. This results in 32nd durations at 8x
 to 4 bar duration at /16 (assuming 4/4 time). The fun starts when you start changing clock rates and sequence lengths - the phase of each sequencer will change relative to the others. This results in rhythmic and melodic patterns that can have a length much longer than the individual sequence lengths.
 
