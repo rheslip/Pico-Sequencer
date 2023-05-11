@@ -39,15 +39,30 @@ Tempo can be set on each note track from 20-240 BPM. Although its shown in each 
 External MIDI clock and transport works automatically - if the host supplies clock the Pico Sequencer will sync to it. Note that it takes quite a few clocks (typically a few bars) for the sequencer to sync its clock to the host. Hopefully I can speed this up in future.
 MIDI start, stop and pause messages from the host are also processed. Host control has not been tested extensively but seems to work OK with AUM on iPadOS.
 
+At this point the sequencer is USB MIDI only. I will probably add serial MIDI, CV and Gate outputs to it at some point.
 
-I'm pretty happy with this project. I find its best to start with something simple - one track with maybe 4 notes, play with the gates etc to get something musically interesting before tweeking too much other stuff. 
-If you start out with a bunch of different sequencer lengths, clock rates etc the results may not sound very musical. Also keep in mind that each track has its own musical scale and root note. 
-In general you want all tracks on the same scale and root or roots up or down by octaves or you will get a lot of bum notes.
+
+My Comments on the Pico Sequencer:
+
+
+I find its best to start with something simple - one track with maybe 4 notes, play with the gates etc to get something musically interesting before tweeking too much other stuff. 
+If you start out with a bunch of different sequencer lengths, clock rates etc the results will likely be kind of wonky.
+If you are  getting a lot of bum notes check that the tracks have musically related scales and roots. You will usually want all tracks on the same root and scale, or roots up or down by octaves.
 
 
 The code uses both cores of the Pico. First core is used for scanning the encoders and handling the graphical UI and menus. For timing accuracy the second core is dedicated to clocking the sequencers and sending MIDI notes.
 The code has gotten a little bit out of hand as I added more features. Not terrible but its not object oriented and there are a lot of global variables and perhaps not obvious interactions. I wrote the menu code a couple of years ago and I keep tweeking it for every new project.
 I wish I was a better C++ programmer.
+
+Still todo:
+
+* Step modes - step forward, backward, ping pong, random etc
+
+* CC control - might be interesting to have CC or note control of some parameters. e.g. a global transpose so you can "play" the sequencer with a keyboard or another sequencer. Route CC LFOs to change sequencer lengths etc.
+
+* Mutation/Randomization - I'd like to come up with some "musical sounding" note randomization algorithms. Picking a random note in the scale does not work very well but this is what most randomizers do.
+
+* Perhaps a "reset to defaults" for when you get really deep in the weeds
 
 
 The Pico sequencer uses fairly simple and inexpensive hardware:
@@ -62,7 +77,7 @@ The Pico sequencer uses fairly simple and inexpensive hardware:
 
 	* Two buttons - Start/Stop and Shift 
 
-At this point the sequencer is USB MIDI only and uses the Adafruit USB MIDI library. I will probably add serial MIDI, CV and Gate outputs to it at some point.
+
 
 No schematics yet but you can pretty much figure it out by looking at the code. All connections are directly to the Pico port pins with the exception of the sixteen step encoders which are multiplexed by the 4067's.
 
