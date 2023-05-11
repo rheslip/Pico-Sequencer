@@ -5,21 +5,21 @@ Each sequencer has its own length which defaults to 16 steps on power up.
 Sequencer step values are edited by rotating the encoder for that step. Press a step encoder to set the sequence length e.g. press encoder 8 to make the sequence 8 steps. Each sequencer has its own clock rate which defaults to 1x (1 beat) but can range from 8 times faster to divided by 16. This results in 32nd durations at 8x
 to 4 bar duration at /16 (assuming 4/4 time). The fun starts when you start changing clock rates and sequence lengths - the phase of each sequencer will change relative to the others. This results in rhythmic and melodic patterns that can have a length much longer than the individual sequence lengths.
 
-	* Note sequencer - Notes are displayed as a simple piano roll as offsets +- one octave from the root note. The root note for each note sequence is set in the associated menu along with its clock rate, scale, MIDI channel and the option to turn it on or off.
+* Note sequencer - Notes are displayed as a simple piano roll as offsets +- one octave from the root note. The root note for each note sequence is set in the associated menu along with its clock rate, scale, MIDI channel and the option to turn it on or off.
 	
-	* Gate sequencer - gates are displayed as vertical bars - longer bar indicates longer gate length. Range is 0% (note is off) to 100% which ties this note to the next. Ties can be cascaded for longer note lengths and interesting rhythmic effects. 
-	The gate sequencer triggers note on and note off events. The clock rate for gate sequences is set in its associated menu.
+* Gate sequencer - gates are displayed as vertical bars - longer bar indicates longer gate length. Range is 0% (note is off) to 100% which ties this note to the next. Ties can be cascaded for longer note lengths and interesting rhythmic effects. 
+The gate sequencer triggers note on and note off events. The clock rate for gate sequences is set in its associated menu.
 	
-	* Velocity sequencer - sets note velocity. Velocity is displayed as vertical bars - longer bar indicates higher MIDI velocity, range 0 to 127 in 10% increments. Clock rate is set in the associated menu.
+* Velocity sequencer - sets note velocity. Velocity is displayed as vertical bars - longer bar indicates higher MIDI velocity, range 0 to 127 in 10% increments. Clock rate is set in the associated menu.
 	
-	* Offset sequencer - this adds an offset or transpose to the note sequence. Offsets have the same range as notes +- one octave and are displayed the same way as notes. When triggered by the gate sequencer, the note that will play is root+note+offset. 
-	Clock rate is set in the associated menu.
+* Offset sequencer - this adds an offset or transpose to the note sequence. Offsets have the same range as notes +- one octave and are displayed the same way as notes. When triggered by the gate sequencer, the note that will play is root+note+offset. 
+Clock rate is set in the associated menu.
 	
-	* Probability sequencer - this sequencer determines the probability that the note will play. Probability is displayed as vertical bars-longer bar indicates higher probability, range 0 to 100% on 10% increments. 
-	You can create euclidean rhythm patterns in the probability sequencer by setting the eulidean length, beats and offset in the associated menu. Probability clock rate is also set in the associated menu.
+* Probability sequencer - this sequencer determines the probability that the note will play. Probability is displayed as vertical bars-longer bar indicates higher probability, range 0 to 100% on 10% increments. 
+You can create euclidean rhythm patterns in the probability sequencer by setting the eulidean length, beats and offset in the associated menu. Probability clock rate is also set in the associated menu.
 	
-	* Ratchet sequencer - you can add ratchets (repeats) to any step by adjusting the vertical bar for that step with its encoder. Ratchets range from no repeats (default) to 4 repeats. Ratcheting works by subdividing the gate period by the number of ratchets on that step. 
-	This does not currently work with tied steps however. Ratchet clock rate is also set in the associated menu. Note that the clock rate affects the rate at which the ratchet sequencer advances, not the rate of ratcheting.
+* Ratchet sequencer - you can add ratchets (repeats) to any step by adjusting the vertical bar for that step with its encoder. Ratchets range from no repeats (default) to 4 repeats. Ratcheting works by subdividing the gate period by the number of ratchets on that step. 
+This does not currently work with tied steps however. Ratchet clock rate is also set in the associated menu. Note that the clock rate affects the rate at which the ratchet sequencer advances, not the rate of ratcheting.
 
 The Start/Stop button is used to start and stop the sequencer. Holding the Shift button and pressing Start/Stop will reset all sequencers back to the first step and synchronize their clocks.
 
@@ -67,15 +67,15 @@ Still todo:
 
 The Pico sequencer uses fairly simple and inexpensive hardware:
 
-	* 128x64 OLED display
+* 128x64 OLED display
 
-	* Sixteen Encoders with switches for setting step values and sequence lengths
+* Sixteen Encoders with switches for setting step values and sequence lengths
 	
-	* Three 4067 analog mux modules for interfacing the sixteen step encoders to the Pico
+* Three 4067 analog mux modules for interfacing the sixteen step encoders to the Pico
 	
-	* One Menu encoder with switch
+* One Menu encoder with switch
 
-	* Two buttons - Start/Stop and Shift 
+* Two buttons - Start/Stop and Shift 
 
 
 
