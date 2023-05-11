@@ -36,10 +36,11 @@ Scales can be selected from the note menu. There are 10 scales: chromatic, major
 
 Tempo can be set on each note track from 20-240 BPM. Although its shown in each note menu for consistency there is only one BPM value which is used for all tracks.
 
+
+Host Sync and Control
+
 External MIDI clock and transport works automatically - if the host supplies clock the Pico Sequencer will sync to it. Note that it takes quite a few clocks (typically a few bars) for the sequencer to sync its clock to the host. Hopefully I can speed this up in future.
 MIDI start, stop and pause messages from the host are also processed. Host control has not been tested extensively but seems to work OK with AUM on iPadOS.
-
-At this point the sequencer is USB MIDI only. I will probably add serial MIDI, CV and Gate outputs to it at some point.
 
 
 My Comments on the Pico Sequencer:
@@ -63,6 +64,8 @@ Still todo:
 * Mutation/Randomization - I'd like to come up with some "musical sounding" note randomization algorithms. Picking a random note in the scale does not work very well but this is what most randomizers do.
 
 * Perhaps a "reset to defaults" for when you get really deep in the weeds
+
+At this point the sequencer is USB MIDI only. I will probably add serial MIDI, CV and Gate outputs to it at some point.
 
 
 The Pico sequencer uses fairly simple and inexpensive hardware:
