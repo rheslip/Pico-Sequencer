@@ -1,11 +1,39 @@
+
+// Copyright 2023 Rich Heslip
+//
+// Author: Rich Heslip 
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+// 
+// See http://creativecommons.org/licenses/MIT/ for more information.
+//
+// -----------------------------------------------------------------------------
 /*
  * MIDI sequencer using RP2040
- * used 16 multiplexed encoders for input
+ * uses 16 multiplexed encoders for step data input
  * a separate encoder for menu inputs
  * SPI OLED display
+ * R Heslip April 2023  
+ * Graphics and text UI is processed on core 0, sequencer clocking and MIDI processed by core 1
+ * 5/12/2023 - moved all the MidiUSB processing to core 1 - running MidiUSB.read() and handlers on core 0 was causing lockups
+ * 5/13/23 - added display of note, gate length etc to top line
  */
-
-// R Heslip April 2023 
 
 
 #include <Arduino.h>
@@ -39,16 +67,16 @@ bool shift =0;
 // text parameter editing system has its own state machine for historical reasons
 // the text menu system requires parameters to be 16 bit integers which is why most of the data types are int16
 
-enum UISTATES {NOTE_DRAW,NOTE_EDIT,GATE_DRAW,GATE_EDIT,VELOCITY_DRAW,VELOCITY_EDIT,OFFSET_DRAW,OFFSET_EDIT,PROBABILITY_DRAW,PROBABILITY_EDIT,RATCHET_DRAW,RATCHET_EDIT};
+enum UISTATES {NOTE_DRAW,NOTE_EDIT,GATE_DRAW,GATE_EDIT,VELOCITY_DRAW,VELOCITY_EDIT,OFFSET_DRAW,OFFSET_EDIT,PROBABILITY_DRAW,PROBABILITY_EDIT,RATCHET_DRAW,RATCHET_EDIT,DISPLAYOFFDRAW,DISPLAYOFFEDIT};
 // initial states on each page
-int16_t UIpages[] = {NOTE_DRAW,GATE_DRAW,VELOCITY_DRAW,OFFSET_DRAW,PROBABILITY_DRAW,RATCHET_DRAW};
+int16_t UIpages[] = {NOTE_DRAW,GATE_DRAW,VELOCITY_DRAW,OFFSET_DRAW,PROBABILITY_DRAW,RATCHET_DRAW,DISPLAYOFF};
 int16_t UIpage=0;
 #define NUMUIPAGES sizeof(UIpages)/sizeof(int16_t)
 bool menumode=0;  // when true we are in the text menu system
-int16_t UI_state=NOTE_DRAW; // UI state
+int16_t UI_state=NOTE_DRAW; // initial UI state
 
 int16_t current_track=0; // track we are editing
-int16_t MIDIchannel[NTRACKS] = {1,1,1,1}; // midi channel to use for sequencer notes
+int16_t MIDIchannel[NTRACKS] = {1,2,3,4}; // midi channel to use for sequencer notes
 int16_t trackenabled[NTRACKS] = {1,0,0,0}; // track on 1, off 0
 
 int32_t displaytimer; // display blanking timer
@@ -69,7 +97,7 @@ uint8_t shiftbut_count;
 // sequencer object
 //StepSeq seq = StepSeq(128);
 
-String notenames[]={"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};
+const char * notenames[]={"C","C#","D","D#","E","F","F#","G","G#","A","A#","B","C"};
 
 #define NENC 16 // number of encoders
 
@@ -217,7 +245,9 @@ void displayupdate(){
 }
 */
 
-  // midi related stuff
+// midi related stuff - after initialization all MIDI stuff runs on core1 for timing accuracy
+// splitting it across both cores causes MidiUSB to hang eventually
+
 // note that the Adafruit stack expects MIDI channel to be 1-16, not 0-15
 void noteOn(byte channel, byte pitch, byte velocity) {
   MidiUSB.sendNoteOn(pitch,velocity,channel+1);
@@ -263,31 +293,31 @@ void handleClock(void){
 
 // these functions are here to avoid forward references. should really do proper include files!
 // there is some risk in processing MIDI start/stop etc on on core 0 since core 1 could also be using MIDI
-// also syncing sequencers while core 1 is doing clocks is a bit dicey
+// core 0 syncing sequencers while core 1 is doing clocks is a bit dicey
 // idling core 1 when using these resources should work
 
 // process MIDI start message - start playing from beginning 
 void handleStart(void){
-  rp2040.idleOtherCore(); // so we can safely use USB midi which it normally used only by core 1
   all_notes_off();  // in case notes are already playing
   sync_sequencers(); // sync all sequencers 
-  rp2040.resumeOtherCore();
   MIDIsync=16; // sync BPM again
+  rp2040.idleOtherCore();  // so core 1 doesn't also modify state machine
   controlstate=RUNNING; // force core 1 to playing state
+  rp2040.resumeOtherCore();
 }
 
 // process MIDI stop message - stop playing
 void handleStop(void){
-  rp2040.idleOtherCore(); // so we can safely use USB midi
   all_notes_off();  // so notes don't hang
-  controlstate=IDLE; // force core 1 to idle state
+  rp2040.idleOtherCore();  // so core 1 doesn't also modify state machine
+  controlstate=IDLE; // put core 1 in idle state machine state
   rp2040.resumeOtherCore();
 }
 
 // process MIDI continue message - continue playing
 void handleContinue(void){
   rp2040.idleOtherCore();  // so core 1 doesn't also modify state machine
-  controlstate=RUNNING; // force core 1 to playing state
+  controlstate=RUNNING; // put core 1 in playing state
   rp2040.resumeOtherCore(); 
 }
 
@@ -298,7 +328,7 @@ void setup() {
   pinMode(A_MUX_1, OUTPUT);  
   pinMode(A_MUX_2, OUTPUT);  
   pinMode(A_MUX_3, OUTPUT);
-  pinMode(ENCA_IN, INPUT_PULLUP);  
+  pinMode(ENCA_IN, INPUT_PULLUP);  // menu encoder and switches
   pinMode(ENCB_IN, INPUT_PULLUP);    
   pinMode(ENCSW_IN, INPUT_PULLUP); 
   pinMode(START_STOP_BUTTON, INPUT_PULLUP);
@@ -329,8 +359,6 @@ void setup() {
 
   // attach MIDI message handler functions
 //  MIDI.setHandleNoteOn(handlenoteOn);
-
-  // Do the same for MIDI Note Off messages.
 //  MIDI.setHandleNoteOff(handlenoteOff);
 
   MidiUSB.setHandleClock(handleClock);
@@ -351,7 +379,7 @@ void setup() {
 
 	display.setTextColor(WHITE,BLACK); // foreground, background  
   display.setCursor(0,30);
-  display.println("  Pico Sequencer");
+  display.println("   Pico Sequencer");
 #ifdef OLED_DISPLAY
   display.display();
 #endif
@@ -371,18 +399,18 @@ void setup() {
 void loop() {
   
   ClickEncoder::Button button;
-  int16_t encvalue;
+  int16_t encvalue,edited_step,edited_val;
 
-  //if ((millis()-displaytimer) > DISPLAY_BLANK_MS) blankdisplay(); // protect the OLED from burnin
-
+  if ((millis()-displaytimer) > DISPLAY_BLANK_MS) {
+    display.fillScreen(BLACK); // protect OLED from burning in
+    display.display();
+  } 
+/*
   if ((millis()-displaytimer) > 500) { // debug printing
-  // Serial.printf("topmenu= %d submenu=%d \n",topmenuindex,topmenu[topmenuindex].submenuindex);
+    // Serial.printf("step= %d val=%d \n",edited_step,edited_val);
     displaytimer=millis();
   }
-
-  // read any new MIDI messages
-  MidiUSB.read(); 
-
+*/
 
   if (shift && !menumode) { // enter menu mode
     display.fillScreen(BLACK); // erase screen
@@ -412,7 +440,15 @@ void loop() {
         UI_state=NOTE_EDIT;
         break;
       case NOTE_EDIT:
-        editnotes(&notes[current_track]); // must call by reference to change the structure values
+        edited_step=editnotes(&notes[current_track]); // must call by reference to change the structure values
+        if (edited_step) {  // show the note index, degree in scale, note name and octave
+          edited_val=notes[current_track].val[edited_step-1];
+          int16_t nameindex=constrain(edited_val+notes[current_track].root,0,127)%12;
+          int16_t octave=constrain(edited_val+notes[current_track].root,0,127)/12;
+          display.setCursor(6*6,0);  // display which note was changed
+          display.printf(":%d %d %s%d    \n",edited_step,edited_val,notenames[nameindex],octave); 
+          display.display();
+        }
         updateindex(notes[current_track]); // show the index on screen
         break;
 
@@ -423,7 +459,13 @@ void loop() {
         UI_state=GATE_EDIT;
         break;
       case GATE_EDIT:
-        editbars(&gates[current_track]);
+        edited_step=editbars(&gates[current_track]);
+        if (edited_step) {  // show the gate value
+          edited_val=gates[current_track].val[edited_step-1];
+          display.setCursor(6*6,0);  
+          display.printf(":%d %d%%  ",edited_step,edited_val*100/GATERANGE); 
+          display.display();
+        }         
         updateindex(gates[current_track]); // show the index on screen
         break;  
 
@@ -434,7 +476,13 @@ void loop() {
         UI_state=VELOCITY_EDIT;
         break;
       case VELOCITY_EDIT:
-        editbars(&velocities[current_track]);
+        edited_step=editbars(&velocities[current_track]);
+        if (edited_step) {  // show the velocity value
+          edited_val=velocities[current_track].val[edited_step-1];
+          display.setCursor(10*6,0);  
+          display.printf(":%d %d%% ",edited_step,edited_val*100/VELOCITYRANGE); 
+          display.display();
+        }  
         updateindex(velocities[current_track]); // show the index on screen
         break;  
 
@@ -445,7 +493,13 @@ void loop() {
         UI_state=OFFSET_EDIT;
         break;
       case OFFSET_EDIT:
-        editnotes(&offsets[current_track]); // must call by reference to change the structure
+        edited_step=editnotes(&offsets[current_track]); // must call by reference to change the structure
+        if (edited_step) {  // show the note index and degree in scale
+          edited_val=offsets[current_track].val[edited_step-1];
+          display.setCursor(8*6,0);  // display which note was changed
+          display.printf(":%d %d  ",edited_step,edited_val); 
+          display.display();
+        }        
         updateindex(offsets[current_track]); // show the index on screen
         break;
 
@@ -456,7 +510,13 @@ void loop() {
         UI_state=PROBABILITY_EDIT;
         break;
       case PROBABILITY_EDIT:
-        editbars(&probability[current_track]);
+        edited_step=editbars(&probability[current_track]);
+        if (edited_step) {  // show the probability
+          edited_val=probability[current_track].val[edited_step-1];
+          display.setCursor(13*6,0);  // display which note was changed
+          display.printf(":%d %3d%%",edited_step,edited_val*100/PROBABILITYRANGE); 
+          display.display();
+        } 
         updateindex(probability[current_track]); // show the index on screen
         break;  
 
@@ -467,7 +527,13 @@ void loop() {
         UI_state=RATCHET_EDIT;
         break;
       case RATCHET_EDIT:
-        editbars(&ratchets[current_track]);
+        edited_step=editbars(&ratchets[current_track]);
+        if (edited_step) {  // show the number of ratchets
+          edited_val=ratchets[current_track].val[edited_step-1];
+          display.setCursor(10*6,0);  
+          display.printf(":%d %d   ",edited_step,edited_val); 
+          display.display();
+        }        
         updateindex(ratchets[current_track]); // show the index on screen
         break;  
 
@@ -505,6 +571,7 @@ void setup1() {
 // start button toggles sequencers on and off
 // shift + start button resyncs sequencers
 void loop1(){
+  MidiUSB.read(); // read any new MIDI messages
   switch (controlstate) {
     case IDLE:
       if (startbutton && shift) sync_sequencers(); // start all sequencers at beginning

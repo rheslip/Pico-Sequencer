@@ -109,10 +109,12 @@ void updateindex(sequencer seq) {
 }
 
 // edit a note sequence
-// both cores accessing the same data can be dangerous
-// so I added code to idle core 1 while core 0 is changing sequencer values
-void editnotes(sequencer *seq) {
-  int16_t encvalue;
+// both cores using the same data at the same time can cause strange things to happen
+// so we idle core 1 while core 0 is changing sequencer values
+// returns 0 or the step that was changed 1-16
+int16_t editnotes(sequencer *seq) {
+  int16_t encvalue,edited_step;
+  edited_step=0;  // 0 means no step changed
   for (int steppos=0; steppos< SEQ_STEPS;++steppos) {  
     if((encvalue=enc[steppos].getValue()) !=0) {
       undrawnote(steppos,seq->val[steppos]);
@@ -120,6 +122,7 @@ void editnotes(sequencer *seq) {
       seq->val[steppos]=constrain(seq->val[steppos]+encvalue,-seq->max,seq->max); // values can be + or -
       rp2040.resumeOtherCore();
       drawnote(steppos,seq->val[steppos]);
+      edited_step=steppos+1; // if value changed return its index +1
     }
     if (enc[steppos].getButton()==ClickEncoder::Closed) { // set end of sequence with the button
       rp2040.idleOtherCore();
@@ -127,11 +130,14 @@ void editnotes(sequencer *seq) {
       rp2040.resumeOtherCore();
     }
   }
+  return edited_step;
 }
 
 // edit a bar graph type sequence - gates, velocity etc
-void editbars(sequencer *seq) {
-  int16_t encvalue;
+// returns 0 or the step that was changed 1-16
+int16_t editbars(sequencer *seq) {
+  int16_t encvalue,edited_step;
+  edited_step=0;
   for (int steppos=0; steppos< SEQ_STEPS;++steppos) {  
     if((encvalue=enc[steppos].getValue()) !=0) {
       undrawbar(steppos,seq->val[steppos],seq->max);
@@ -139,6 +145,7 @@ void editbars(sequencer *seq) {
       seq->val[steppos]=constrain(seq->val[steppos]+encvalue,0,seq->max); // values can be 0 to max     
       rp2040.resumeOtherCore();
       drawbar(steppos,seq->val[steppos],seq->max);
+      edited_step=steppos+1;
     }
     if (enc[steppos].getButton()==ClickEncoder::Closed) { // set end of sequence with the button
       rp2040.idleOtherCore();
@@ -146,6 +153,7 @@ void editbars(sequencer *seq) {
       rp2040.resumeOtherCore();
     }
   }
+  return edited_step;
 }
 
 void drawheader(String text){

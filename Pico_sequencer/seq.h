@@ -3,7 +3,7 @@
 #define SEQ_STEPS 16 // 16 step sequencer
 #define NOTERANGE 12 // notes can be +- one octave from root - display limitation
 #define GATERANGE 7  // gate time 0-7 ie 12.5% increments
-#define RATCHETRANGE 4 // number of ratchets per step 0-4
+#define RATCHETRANGE 3 // number of ratchets/repeats per step 0-3
 #define PROBABILITYRANGE 9  // probability 0-9 ie 10% increments
 #define VELOCITYRANGE 32  // velocity has 32 steps ie 2.5% per step. makes spinning the encoder less tedious
 #define VELOCITYSCALE 4 // 32*4=128 which we limit to 127 
@@ -26,11 +26,11 @@ int16_t divtable[] = {3,4,6,8,12,16,24,36,48,72,96,192,384};
 // this simplifies the code somewhat
 // clocks are setup for 24ppqn MIDI clock
 // note that there are two threads of execution running on the two Pico cores - UI and note handling
-// be careful about editing items that are used by the 2nd Pico core for note timing etc
+// must be careful about editing items that are used by the 2nd Pico core for note timing etc
 
 struct sequencer {
   int16_t val[SEQ_STEPS];  // values of note offsets from root, gate lengths etc. 
-  int16_t max;    // maximum positive value of val for scaling
+  int16_t max;    // maximum positive value of val - used for UI scaling
   int16_t index;    // index of step we are on
   int16_t stepmode;    // step mode - fwd, backward etc   
   int16_t first;  // first step used - anything used my the menusystem has to be integer type
@@ -39,7 +39,7 @@ struct sequencer {
   int16_t eucbeats;   // euclidean beats
   int16_t divider;   // clock rate divider - lookup via table
   int16_t clockticks;   //  clock counter
-  int16_t root;   // "root" note - note offsets are relative to this
+  int16_t root;   // "root" note - note offsets are relative to this. also used for euclidean offset
 };
 
 // notes are stored as offsets from the root 
@@ -376,7 +376,7 @@ int16_t seqclock(sequencer *seq) {
 void clocktick (long clockperiod) {
   int16_t gatestate;
   for (uint8_t track=0; track<NTRACKS;++track) {
-    clocktimer=millis();
+
     // a clock tick has expired so clock the sequencers
     seqclock(&notes[track]);  // have to call by reference
     seqclock(&offsets[track]);
@@ -433,8 +433,10 @@ void clocktick (long clockperiod) {
 // it loops thru all tracks, all sequences looking for note on and off events to process
 void do_clocks(void) {
   long clockperiod= (long)(((60.0/(float)bpm)/PPQN)*1000);
-  if ((millis() - clocktimer) > clockperiod) clocktick(clockperiod); 
-
+  if ((millis() - clocktimer) > clockperiod) {
+    clocktimer=millis(); 
+    clocktick(clockperiod);
+  }
 }
 
 // send noteoff for all notes
