@@ -100,6 +100,7 @@ struct submenu note1params[] = {
   "CHAN","MIDI Channel",1,16,1,TYPE_INTEGER,0,&MIDIchannel[0],0,
   "ENAB","Enable Track",0,1,1,TYPE_TEXT,textoffon,&trackenabled[0],0,
   " BPM","Beats Per Min",20,240,1,TYPE_INTEGER,0,&bpm,0,
+  "MCLK","Use MIDI clock",0,1,1,TYPE_TEXT,textoffon,&useMIDIclock,0,
 };
 
 struct submenu note2params[] = {
@@ -110,6 +111,7 @@ struct submenu note2params[] = {
   "CHAN","MIDI Channel",1,16,1,TYPE_INTEGER,0,&MIDIchannel[1],0,
   "ENAB","Enable Seq",0,1,1,TYPE_TEXT,textoffon,&trackenabled[1],0,
   " BPM","Beats Per Min",20,240,1,TYPE_INTEGER,0,&bpm,0,
+  "MCLK","Use MIDI clock",0,1,1,TYPE_TEXT,textoffon,&useMIDIclock,0,
 };
 struct submenu note3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
@@ -119,6 +121,7 @@ struct submenu note3params[] = {
   "CHAN","MIDI Channel",1,16,1,TYPE_INTEGER,0,&MIDIchannel[2],0,
   "ENAB","Enable Track",0,1,1,TYPE_TEXT,textoffon,&trackenabled[2],0, 
   " BPM","Beats Per Min",20,240,1,TYPE_INTEGER,0,&bpm,0,
+  "MCLK","Use MIDI clock",0,1,1,TYPE_TEXT,textoffon,&useMIDIclock,0,
 };
 struct submenu note4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
@@ -128,6 +131,7 @@ struct submenu note4params[] = {
   "CHAN","MIDI Channel",1,16,1,TYPE_INTEGER,0,&MIDIchannel[3],0,
   "ENAB","Enable Track",0,1,1,TYPE_TEXT,textoffon,&trackenabled[3],0,
   " BPM","Beats Per Min",20,240,1,TYPE_INTEGER,0,&bpm,0,
+  "MCLK","Use MIDI clock",0,1,1,TYPE_TEXT,textoffon,&useMIDIclock,0,
 };
 
 struct submenu gate1params[] = {
@@ -227,6 +231,35 @@ struct submenu ratchet4params[] = {
   "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&ratchets[3].divider,0,
 };
 
+struct submenu mod1params[] = {
+  // name,longname,min,max,step,type,*textfield,*parameter,*handler
+  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&mods[0].divider,0,
+  "CHAN","CC MIDI Channel",1,16,1,TYPE_INTEGER,0,&CCchannel[0],0,
+  "  CC","CC Number",0,127,1,TYPE_INTEGER,0,&mods[0].root,0,
+  "ENAB","Mod On/Off",0,1,1,TYPE_TEXT,textoffon,&mod_enabled[0],0,
+};
+struct submenu mod2params[] = {
+  // name,longname,min,max,step,type,*textfield,*parameter,*handler
+  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&mods[1].divider,0,
+  "CHAN","CC MIDI Channel",1,16,1,TYPE_INTEGER,0,&CCchannel[1],0,
+  "  CC","CC Number",0,127,1,TYPE_INTEGER,0,&mods[1].root,0,
+  "ENAB","Mod On/Off",0,1,1,TYPE_TEXT,textoffon,&mod_enabled[1],0,
+};
+struct submenu mod3params[] = {
+  // name,longname,min,max,step,type,*textfield,*parameter,*handler
+  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&mods[2].divider,0,
+  "CHAN","CC MIDI Channel",1,16,1,TYPE_INTEGER,0,&CCchannel[2],0,
+  "  CC","CC Number",0,127,1,TYPE_INTEGER,0,&mods[3].root,0,
+  "ENAB","Mod On/Off",0,1,1,TYPE_TEXT,textoffon,&mod_enabled[2],0,
+};
+struct submenu mod4params[] = {
+  // name,longname,min,max,step,type,*textfield,*parameter,*handler
+  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&mods[3].divider,0,
+  "CHAN","CC MIDI Channel",1,16,1,TYPE_INTEGER,0,&CCchannel[3],0,
+  "  CC","CC Number",0,127,1,TYPE_INTEGER,0,&mods[3].root,0,
+  "ENAB","Mod On/Off",0,1,1,TYPE_TEXT,textoffon,&mod_enabled[3],0,
+};
+
 /*
 
 struct submenu env0params[] = {
@@ -267,6 +300,10 @@ struct menu mainmenu[] = {
   "Ratchets 2",ratchet2params,0,sizeof(ratchet2params)/sizeof(submenu),
   "Ratchets 3",ratchet3params,0,sizeof(ratchet3params)/sizeof(submenu),
   "Ratchets 4",ratchet4params,0,sizeof(ratchet4params)/sizeof(submenu),
+  "Mods 1",mod1params,0,sizeof(mod1params)/sizeof(submenu),
+  "Mods 2",mod2params,0,sizeof(mod2params)/sizeof(submenu),
+  "Mods 3",mod3params,0,sizeof(mod3params)/sizeof(submenu),
+  "Mods 4",mod4params,0,sizeof(mod4params)/sizeof(submenu),
 };
 
 #define NUM_MAIN_MENUS sizeof(mainmenu)/ sizeof(menu)

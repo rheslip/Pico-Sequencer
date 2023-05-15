@@ -1,6 +1,6 @@
 # Pico Sequencer - four track generative MIDI sequencer based on Raspberry Pi Pico
 
-This sequencer is inspired by quite a few I've used before but mostly by Monome's Kria. It can be used as a simple one to sixteen step sequencer with four tracks but what makes it generative is there are actually six independent sequencers per track.
+This sequencer is inspired by quite a few I've used before but mostly by Monome's Kria. It can be used as a simple one to sixteen step sequencer with four tracks but what makes it generative is there are actually seven independent sequencers per track.
 Each sequencer has its own length which defaults to 16 steps on power up. 
 Sequencer step values are edited by rotating the encoder for that step. Press a step encoder to set the sequence length e.g. press encoder 8 to make the sequence 8 steps. Each sequencer has its own clock rate which defaults to 1x (1 beat) but can range from 8 times faster to divided by 16. This results in 32nd durations at 8x
 to 4 bar duration at /16 (assuming 4/4 time). The fun starts when you start changing clock rates and sequence lengths - the phase of each sequencer will change relative to the others. This results in rhythmic and melodic patterns that can have a length much longer than the individual sequence lengths.
@@ -21,12 +21,15 @@ You can create euclidean rhythm patterns in the probability sequencer by setting
 * Ratchet sequencer - you can add ratchets (repeats) to any step by adjusting the vertical bar for that step with its encoder. Ratchets range from no repeats (default) to 4 repeats. Ratcheting works by subdividing the gate period by the number of ratchets on that step. 
 This does not currently work with tied steps however. Ratchet clock rate is also set in the associated menu. Note that the clock rate affects the rate at which the ratchet sequencer advances, not the rate of ratcheting.
 
+* Modulation sequencer - Sends CC messages to the host which can be used to modulate synth filter cutoff etc. Modulation (CC value) is displayed as vertical bars with values from 0-127. CC messages are only sent when values change to minimize MIDI traffic. 
+Modulation clock rate, CC number and MIDI channel is set in the associated menu.
+
 The Start/Stop button is used to start and stop the sequencer. Holding the Shift button and pressing Start/Stop will reset all sequencers back to the first step and synchronize their clocks.
 
 
 Graphical UI
 
-The current sequencer is drawn on the display as a piano roll for notes and offsets or as a series of bars for the other sequencers. Rotating the menu encoder scrolls through the six sequencer displays. Press and rotate the menu encoder to switch tracks.
+The current sequencer is drawn on the display as a piano roll for notes and offsets or as a series of bars for the other sequencers. Rotating the menu encoder scrolls through the seven sequencer displays. Press and rotate the menu encoder to switch tracks.
 
 
 Pressing the Shift button will bring up a text menu of the parameters (clock rates etc) for the sequencer that is currently on the screen. Encoders 11,12,13 and 14 are used to change the four values which are arranged left to right. 
@@ -34,25 +37,24 @@ In some cases e.g. note sequencers there are more parameters that can be accesse
 
 Scales can be selected from the note menu. There are 10 scales: chromatic, major, minor, harmonic minor, major pentatonic, minor pentatonic, dorian, phrygian, lydian and mixolydian. Note that each track can have its own scale.
 
-Tempo can be set on each note track from 20-240 BPM. Although its shown in each note menu for consistency there is only one BPM value which is used for all tracks.
+Tempo can be set on each note track from 20-240 BPM. Although its shown in every note menu for consistency there is only one BPM value which is used for all tracks.
 
 
 Host Sync and Control
 
-External MIDI clock and transport works automatically - if the host supplies clock the Pico Sequencer will sync to it. Note that it takes quite a few clocks (typically a few bars) for the sequencer to sync its clock to the host. Hopefully I can speed this up in future.
-MIDI start, stop and pause messages from the host are also processed. Host control has not been tested extensively but seems to work OK with AUM on iPadOS.
+External MIDI clock is set up in the note menu. Internal/external clock is shown in every note menu for consistency but it is used for all tracks. MIDI start, stop and pause messages from the host are also processed. Host control has not been tested extensively but seems to work OK with AUM on iPadOS.
 
 
-My Comments on the Pico Sequencer:
+Comments on the Pico Sequencer:
 
 
-I find its best to start with something simple - one track with maybe 4 notes, play with the gates etc to get something musically interesting before tweeking too much other stuff. 
+Its best to start with something simple - one track with maybe 4 notes, play with the gates etc to get something musically interesting before tweeking too much other stuff. 
 If you start out with a bunch of different sequencer lengths, clock rates etc the results will likely be kind of wonky.
 If you are  getting a lot of bum notes check that the tracks have musically related scales and roots. You will usually want all tracks on the same root and scale, or roots up or down by octaves.
 
 
 The code uses both cores of the Pico. First core is used for scanning the encoders and handling the graphical UI and menus. For timing accuracy the second core is dedicated to clocking the sequencers and sending MIDI notes.
-The code has gotten a little bit out of hand as I added more features. Not terrible but its not object oriented and there are a lot of global variables and perhaps not obvious interactions. I wrote the menu code a couple of years ago and I keep tweeking it for every new project.
+The code is not terrible but its not object oriented and there are a lot of global variables and perhaps not obvious interactions. I wrote the menu code a couple of years ago and I keep tweeking it for every new project.
 I wish I was a better C++ programmer.
 
 Still todo:
@@ -84,6 +86,11 @@ The Pico sequencer uses fairly simple and inexpensive hardware:
 
 No schematics yet but you can pretty much figure it out by looking at the code. All connections are directly to the Pico port pins with the exception of the sixteen step encoders which are multiplexed by the 4067's.
 
+History:
+
+May 12 2023 - moved all the MIDI processing to core 1. USB MIDI was locking up with the handlers running on core 0
+
+May 14 2023 - added CC modulation sequencers. Added a menu item for external/internal clock. MIDI clock now clocks sequencers in external clock mode. Clock was drifting relative to the host with the original BPM syncing method.
 
 
 # Software Dependendencies:

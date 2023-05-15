@@ -67,9 +67,9 @@ bool shift =0;
 // text parameter editing system has its own state machine for historical reasons
 // the text menu system requires parameters to be 16 bit integers which is why most of the data types are int16
 
-enum UISTATES {NOTE_DRAW,NOTE_EDIT,GATE_DRAW,GATE_EDIT,VELOCITY_DRAW,VELOCITY_EDIT,OFFSET_DRAW,OFFSET_EDIT,PROBABILITY_DRAW,PROBABILITY_EDIT,RATCHET_DRAW,RATCHET_EDIT,DISPLAYOFFDRAW,DISPLAYOFFEDIT};
+enum UISTATES {NOTE_DRAW,NOTE_EDIT,GATE_DRAW,GATE_EDIT,VELOCITY_DRAW,VELOCITY_EDIT,OFFSET_DRAW,OFFSET_EDIT,PROBABILITY_DRAW,PROBABILITY_EDIT,RATCHET_DRAW,RATCHET_EDIT,MOD_DRAW,MOD_EDIT,DISPLAYOFF,DORMANT};
 // initial states on each page
-int16_t UIpages[] = {NOTE_DRAW,GATE_DRAW,VELOCITY_DRAW,OFFSET_DRAW,PROBABILITY_DRAW,RATCHET_DRAW,DISPLAYOFF};
+int16_t UIpages[] = {NOTE_DRAW,GATE_DRAW,VELOCITY_DRAW,OFFSET_DRAW,PROBABILITY_DRAW,RATCHET_DRAW,MOD_DRAW};
 int16_t UIpage=0;
 #define NUMUIPAGES sizeof(UIpages)/sizeof(int16_t)
 bool menumode=0;  // when true we are in the text menu system
@@ -77,9 +77,12 @@ int16_t UI_state=NOTE_DRAW; // initial UI state
 
 int16_t current_track=0; // track we are editing
 int16_t MIDIchannel[NTRACKS] = {1,2,3,4}; // midi channel to use for sequencer notes
-int16_t trackenabled[NTRACKS] = {1,0,0,0}; // track on 1, off 0
+int16_t trackenabled[NTRACKS] = {1,0,0,0}; // 1 if track on is 1, 0 if off
+int16_t CCchannel[NTRACKS] = {1,2,3,4}; // midi channel to use for CCs
+int16_t mod_enabled[NTRACKS] = {0,0,0,0}; // 1 if mod sequencer for track is on, 0 if off
 
-int32_t displaytimer; // display blanking timer
+#define DISPLAY_BLANK_MS 120*1000  // display blanking time
+int32_t displaytimer ; // display blanking timer
 
 #define TEMPO    120
 #define PPQN 24  // clocks per quarter note
@@ -87,6 +90,7 @@ int16_t bpm = TEMPO;
 int32_t lastMIDIclock; // timestamp of last MIDI clock
 int16_t MIDIclocks=PPQN*2; // midi clock counter
 int16_t MIDIsync = 16;  // number of clocks required to sync BPM
+int16_t useMIDIclock = 0; // true if we are using MIDI clock
 
 enum CONTROLSTATES {IDLE,STARTUP,RUNNING,RUNJUSTSYNCED,SHUTDOWN}; // control state machine states
 int16_t controlstate=0; // state machine state
@@ -265,25 +269,9 @@ void noteOff(byte channel, byte pitch, byte velocity) {
 // Fourth parameter is the control value (0-127).
 
 void controlChange(byte channel, byte control, byte value) {
-  MidiUSB.sendControlChange(control,value,channel);
+  MidiUSB.sendControlChange(control,value,channel+1);
 }
 
-// process MIDI clock messages
-// count MIDI clocks for a while to get a decent average and then compute BPM from it
-void handleClock(void){
-  long qn;
-  --MIDIclocks;
-  if (MIDIclocks ==0 ) {
-    MIDIclocks=PPQN*2;
-    qn=millis()-lastMIDIclock;
-    lastMIDIclock=millis();
-    if (MIDIsync >0) --MIDIsync;
-    if (MIDIsync ==0) {
-      if ((qn < 6200) && (qn > 480))  bpm=2*60.0*1000/qn; // check that clock value is between 20 and 240BPM so we don't trash the current bpm
-    }
-//    Serial.printf("%d %d\n",qn,bpm);
-  }
-}
 
 // set up as include files because I'm too lazy to create proper header and .cpp files
 #include "scales.h"   //
@@ -304,6 +292,26 @@ void handleStart(void){
   rp2040.idleOtherCore();  // so core 1 doesn't also modify state machine
   controlstate=RUNNING; // force core 1 to playing state
   rp2040.resumeOtherCore();
+}
+
+// process MIDI clock messages
+// count MIDI clocks for a while to get a decent average and then compute BPM from it
+// if external MIDI clock is enabled use it as the master clock
+void handleClock(void){
+  long qn,clockperiod;
+  clockperiod= (long)(((60.0/(float)bpm)/PPQN)*1000); // for call to clocktick(). use calculated BPM which is more stable - MIDI clock has a lot of jitter
+  --MIDIclocks;
+  if (MIDIclocks ==0 ) {
+    MIDIclocks=PPQN*2;
+    qn=millis()-lastMIDIclock;
+    lastMIDIclock=millis();
+    if (MIDIsync >0) --MIDIsync;
+    if (MIDIsync ==0) {
+      if ((qn < 6200) && (qn > 480))  bpm=2*60.0*1000/qn; // check that clock value is between 20 and 240BPM so we don't trash the current bpm
+    }
+//    Serial.printf("%d %d\n",qn,bpm);
+  }
+  if (useMIDIclock) clocktick(clockperiod); 
 }
 
 // process MIDI stop message - stop playing
@@ -386,6 +394,7 @@ void setup() {
   delay(3000);
 
   display.fillScreen(BLACK);
+  displaytimer=millis(); // reset display blanking timer
 /*
    // start sequencer and set callbacks
   seq.begin(TEMPO, steps);
@@ -402,8 +411,7 @@ void loop() {
   int16_t encvalue,edited_step,edited_val;
 
   if ((millis()-displaytimer) > DISPLAY_BLANK_MS) {
-    display.fillScreen(BLACK); // protect OLED from burning in
-    display.display();
+    UI_state=DISPLAYOFF;
   } 
 /*
   if ((millis()-displaytimer) > 500) { // debug printing
@@ -428,6 +436,7 @@ void loop() {
 
   if (menumode) {
     domenus();  // call the text menu state machine
+    displaytimer=millis(); // reset display blanking timer
   }
   else {
 
@@ -448,6 +457,7 @@ void loop() {
           display.setCursor(6*6,0);  // display which note was changed
           display.printf(":%d %d %s%d    \n",edited_step,edited_val,notenames[nameindex],octave); 
           display.display();
+          displaytimer=millis(); // reset display blanking timer
         }
         updateindex(notes[current_track]); // show the index on screen
         break;
@@ -465,6 +475,7 @@ void loop() {
           display.setCursor(6*6,0);  
           display.printf(":%d %d%%  ",edited_step,edited_val*100/GATERANGE); 
           display.display();
+          displaytimer=millis(); // reset display blanking timer
         }         
         updateindex(gates[current_track]); // show the index on screen
         break;  
@@ -482,6 +493,7 @@ void loop() {
           display.setCursor(10*6,0);  
           display.printf(":%d %d%% ",edited_step,edited_val*100/VELOCITYRANGE); 
           display.display();
+          displaytimer=millis(); // reset display blanking timer
         }  
         updateindex(velocities[current_track]); // show the index on screen
         break;  
@@ -499,6 +511,7 @@ void loop() {
           display.setCursor(8*6,0);  // display which note was changed
           display.printf(":%d %d  ",edited_step,edited_val); 
           display.display();
+          displaytimer=millis(); // reset display blanking timer
         }        
         updateindex(offsets[current_track]); // show the index on screen
         break;
@@ -516,6 +529,7 @@ void loop() {
           display.setCursor(13*6,0);  // display which note was changed
           display.printf(":%d %3d%%",edited_step,edited_val*100/PROBABILITYRANGE); 
           display.display();
+          displaytimer=millis(); // reset display blanking timer
         } 
         updateindex(probability[current_track]); // show the index on screen
         break;  
@@ -533,9 +547,37 @@ void loop() {
           display.setCursor(10*6,0);  
           display.printf(":%d %d   ",edited_step,edited_val); 
           display.display();
+          displaytimer=millis(); // reset display blanking timer
         }        
         updateindex(ratchets[current_track]); // show the index on screen
-        break;  
+        break; 
+
+      case MOD_DRAW:
+        drawheader("Mod");
+        drawbars(mods[current_track]);
+        drawindex(mods[current_track].index);
+        UI_state=MOD_EDIT;
+        break;
+      case MOD_EDIT:
+        edited_step=editbars(&mods[current_track]);
+        if (edited_step) {  // show the number of ratchets
+          edited_val=mods[current_track].val[edited_step-1];
+          display.setCursor(5*6,0);  
+          display.printf(":%d %d   ",edited_step,edited_val); 
+          display.display();
+          displaytimer=millis(); // reset display blanking timer
+        }        
+        updateindex(mods[current_track]); // show the index on screen
+        break; 
+
+      case DISPLAYOFF:
+        display.fillScreen(BLACK); // protect OLED from burning in
+        display.display(); 
+        UI_state=DORMANT;
+        break;
+      
+      case DORMANT:
+        break; // turning menu encoder will start screen up again
 
       default:
         UI_state = UIpages[0];
@@ -543,6 +585,7 @@ void loop() {
 
     button=menuenc.getButton();
     if (encvalue=menuenc.getValue()) { // scroll thru UI pages
+      displaytimer=millis(); // reset display blanking timer
 //      if (button == ClickEncoder::Closed) { // we are changing tracks
       if (!digitalRead(MENU_ENCSW_IN)) { // button value not working for some reason
         current_track+=encvalue;
@@ -583,7 +626,7 @@ void loop1(){
       }
       break;
     case RUNNING:
-      do_clocks(); // clock the sequencers and handle notes
+      if (!useMIDIclock) do_clocks(); // clock the sequencers and handle notes
       if (startbutton && shift) { // we can sync the sequencers while its running
         sync_sequencers();
         controlstate=RUNJUSTSYNCED;
@@ -594,7 +637,7 @@ void loop1(){
       }
       break;
     case RUNJUSTSYNCED: // just synced, wait for start button release
-      do_clocks(); // clock the sequencers and handle notes
+      if (!useMIDIclock) do_clocks(); // clock the sequencers and handle notes
       if (!startbutton) { // till startbutton is released
         controlstate=RUNNING;
       }

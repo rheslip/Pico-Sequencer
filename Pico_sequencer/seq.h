@@ -3,10 +3,11 @@
 #define SEQ_STEPS 16 // 16 step sequencer
 #define NOTERANGE 12 // notes can be +- one octave from root - display limitation
 #define GATERANGE 7  // gate time 0-7 ie 12.5% increments
-#define RATCHETRANGE 3 // number of ratchets/repeats per step 0-3
-#define PROBABILITYRANGE 9  // probability 0-9 ie 10% increments
 #define VELOCITYRANGE 32  // velocity has 32 steps ie 2.5% per step. makes spinning the encoder less tedious
 #define VELOCITYSCALE 4 // 32*4=128 which we limit to 127 
+#define PROBABILITYRANGE 9  // probability 0-9 ie 10% increments
+#define RATCHETRANGE 3 // number of ratchets/repeats per step 0-3
+#define MODRANGE 127  // modulation range 0-127
 
 // clock related stuff
 enum STEPMODE {FORWARD,BACKWARD,PINGPONG,DRUNK,RANDOM,EUCLIDEAN};
@@ -21,6 +22,7 @@ int16_t ratchetcnt[NTRACKS]; // number of ratchets for the note
 // const char * textrates[] = {" 8x"," 6x"," 4x"," 3x", " 2x","1.5x"," 1x","/1.5"," /2"," /3"," /4"," /8"," /16"};
 int16_t divtable[] = {3,4,6,8,12,16,24,36,48,72,96,192,384};
 
+int16_t lastCC[NTRACKS]; // we save the last CC message - reduce MIDI traffic by not sending the same message twice 
 
 // all of the sequences use the same data structure even though the data is somewhat different in each case
 // this simplifies the code somewhat
@@ -39,7 +41,7 @@ struct sequencer {
   int16_t eucbeats;   // euclidean beats
   int16_t divider;   // clock rate divider - lookup via table
   int16_t clockticks;   //  clock counter
-  int16_t root;   // "root" note - note offsets are relative to this. also used for euclidean offset
+  int16_t root;   // "root" note - note offsets are relative to this. also used for euclidean offset and CC number
 };
 
 // notes are stored as offsets from the root 
@@ -215,8 +217,8 @@ sequencer ratchets[NTRACKS] = {
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
   1, // euclidean beats
-  24,  // clock divide
-  6,    // clock counter
+  6,  // clock divide
+  24,    // clock counter
   60,   // root note
 
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // initial data
@@ -346,6 +348,58 @@ sequencer probability[NTRACKS] = {
   0,   // holds euclidean offset in this case
 };
 
+// modulation values 
+sequencer mods[NTRACKS] = {
+  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,  // initial data 
+  MODRANGE,  // maximum value
+  0,   // step index
+  FORWARD, // step mode
+  0,   // first step
+  SEQ_STEPS-1,  // last step
+  SEQ_STEPS, // euclidean length
+  1, // euclidean beats
+  6,  // clock divide
+  24,    // clock counter
+  16,   // CC number in this case
+
+  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,  // initial data 
+  MODRANGE,  // maximum value
+  0,   // step index
+  FORWARD, // step mode
+  0,   // first step
+  SEQ_STEPS-1,  // last step
+  SEQ_STEPS, // euclidean length
+  1, // euclidean beats
+  6,  // clock divide
+  24,    // clock counter
+  17,   // CC number in this case
+
+  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,  // initial data 
+  MODRANGE,  // maximum value
+  0,   // step index
+  FORWARD, // step mode
+  0,   // first step
+  SEQ_STEPS-1,  // last step
+  SEQ_STEPS, // euclidean length
+  1, // euclidean beats
+  6,  // clock divide
+  24,    // clock counter
+  18,   // CC number in this case
+
+  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,  // initial data 
+  MODRANGE,  // maximum value
+  0,   // step index
+  FORWARD, // step mode
+  0,   // first step
+  SEQ_STEPS-1,  // last step
+  SEQ_STEPS, // euclidean length
+  1, // euclidean beats
+  6,  // clock divide
+  24,    // clock counter
+  19,   // CC number in this case
+};
+
+
 
 // clock a sequencer
 // you have to pass a pointer to the sequence structure, not the structure itself
@@ -355,8 +409,9 @@ int16_t seqclock(sequencer *seq) {
   int16_t event=0;
   --seq->clockticks;
   if (seq->clockticks < 1 ) { // divider has rolled over
-    //seq->clockticks=seq->divider; 
+
     seq->clockticks=divtable[seq->divider];  // lookup table used to get clock divider
+//controlChange(8,16,seq->clockticks);
     event=1;
     if (seq->stepmode == FORWARD) {
       ++seq->index;
@@ -373,8 +428,10 @@ int16_t seqclock(sequencer *seq) {
 
 // clock all the sequencers
 // clockperiod is the period of the 24ppqn clock - used for calculating gate times etc
+// this code got a bit messy after I added multiple tracks
+// it loops thru all tracks, all sequences looking for note on and off events to process
 void clocktick (long clockperiod) {
-  int16_t gatestate;
+  int16_t gatestate,ccval;
   for (uint8_t track=0; track<NTRACKS;++track) {
 
     // a clock tick has expired so clock the sequencers
@@ -405,12 +462,11 @@ void clocktick (long clockperiod) {
       else tie[track]=FALSE;
       //Serial.printf("notelength %d\n",notelength);
     }
-  }
- 
-// this code produces 100% gate time on ratchets
+
+    // process note offs and ratchets
+    // this code produces 100% gate time on ratchets
 // ie a noteoff immediately followed by a noteon
 // addtional logic needed to handle gate times less than 100% but this works OK
-  for (uint8_t track=0; track<NTRACKS;++track) {
     if (millis() > notetimer[track]) { // if note timer has expired
       if (active_note[track] && (!tie[track])) {
         noteOff(MIDIchannel[track]-1,active_note[track],0); // turn the note off
@@ -425,12 +481,21 @@ void clocktick (long clockperiod) {
         notetimer[track]=millis()+active_notelength[track];
       }     
     }
+
+    // process mod sequencers
+    gatestate=seqclock(&mods[track]); 
+    if (gatestate) { // true when sequencer steps
+      ccval=mods[track].val[mods[track].index]; // get the CC value to send
+      if ((mod_enabled[track]) && (ccval >=0) && (ccval!=lastCC[track])) { // CC value -1 means don't send anything. don't send same CC message over and over
+        controlChange(((byte)CCchannel[track])-1,(byte)mods[track].root,(byte)ccval); // in this case seq.root is the CC number
+        lastCC[track]=ccval;
+      }
+    }
   }
 }
+ 
 
 // must be called regularly for sequencer to run
-// this code got a bit messy after I added multiple tracks
-// it loops thru all tracks, all sequences looking for note on and off events to process
 void do_clocks(void) {
   long clockperiod= (long)(((60.0/(float)bpm)/PPQN)*1000);
   if ((millis() - clocktimer) > clockperiod) {
@@ -632,13 +697,10 @@ void eucprobability(void) {
   uint16_t pattern;
   pattern = euclid(probability[current_track].euclen,probability[current_track].eucbeats,probability[current_track].root); // "root" is used for offset in this case
   rp2040.idleOtherCore(); // stop core 1 while we modify sequencer values
-  probability[current_track].last=probability[current_track].euclen; // reset the sequence length to the euclidean length set in the menus
-  //Serial.printf("%x ",pattern);
+  probability[current_track].last=probability[current_track].euclen-1; // reset the sequence length to the euclidean length set in the menus
   for (int i=0;i<probability[current_track].euclen;++i){  // pattern is MSB first
-    //Serial.printf("%d", bitRead(pattern,probability.euclen-i-1));
     if (bitRead(pattern,probability[current_track].euclen-i-1)) probability[current_track].val[i]=PROBABILITYRANGE; // 100% probability
     else probability[current_track].val[i]=0;  // 0% probability, same as gate off
   }
   rp2040.resumeOtherCore();
-  // Serial.printf("\n");
 }
