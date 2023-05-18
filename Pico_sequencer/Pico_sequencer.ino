@@ -143,11 +143,15 @@ ClickEncoder enc[NENC] = {
   ClickEncoder(ENCA_IN,ENCB_IN,ENCSW_IN,ENCDIVIDE)
 };
 
-// encoder aliases for my Teensy DSP menu system
-#define P0  10   
-#define P1  11
-#define P2  12
-#define P3  13
+// encoder aliases - maps physical encoder number to parameter number
+#define P0  2   // parameter 0 is modified my encoder 2
+#define P1  3
+#define P2  4
+#define P3  5
+#define P4  10   
+#define P5  11
+#define P6  12
+#define P7  13
 
 
 ClickEncoder menuenc(MENU_ENCA_IN,MENU_ENCB_IN,MENU_ENCSW_IN,ENCDIVIDE); // menu encoder object
@@ -202,7 +206,7 @@ bool TimerHandler0(struct repeating_timer *t)
     digitalWrite(A_MUX_1, addr & 2);
     digitalWrite(A_MUX_2, addr & 4);
     digitalWrite(A_MUX_3, addr & 8); 
-    delayMicroseconds(3);         // address settling time 
+    delayMicroseconds(4);         // address settling time 
     enc[addr].service();    // check the encoder inputs
   } 
   menuenc.service(); // handle the menu encoder which is on different port pins

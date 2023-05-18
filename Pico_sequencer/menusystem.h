@@ -37,13 +37,17 @@
 #define DISPLAY_CHAR_HEIGHT 8 // character height in pixels - for bitmap displays
 #define DISPLAY_CHAR_WIDTH 6 // character width in pixels - for bitmap displays
 #define DISPLAY_X_MENUPAD 2   // extra space between menu items
-#define TOPMENU_Y 0   // line to display top menus
-#define MSG_Y   30   // line to display messages
+#define TOPMENU_Y 22   // line to display top menus
+#define MSG_Y   34   // line to display messages
 #define FILENAME_Y 15 // line to display filename
-#define SUBMENU_FIELDS 4 // max number of subparameters on a line ie for 20 char display each field has 5 characters
-#define SUBMENU_Y 46 // y pos to display submenus (parameter names)
-#define SUBMENU_VALUE_Y 56 // y pos to display parameter values
-uint8_t submenu_X[]= {0,32,64,96};  // location of the submenus by pixel
+#define SUBMENU_FIELDS 8 // max number of subparameters ie for 20 char display each field has 5 characters - we use top and bottom of display for the Pico sequencer
+#define SUBMENU_Y0 0 // y pos to display submenus (parameter names)
+#define SUBMENU_Y1 46 // 2nd row y pos to display submenus (parameter names)
+#define SUBMENU_VALUE_Y0 10 // y pos to display parameter values
+#define SUBMENU_VALUE_Y1 56 // 2nd row y pos to display parameter values
+const uint8_t submenu_X[]= {0,32,64,96,0,32,64,96};  // X location of the submenus by pixel
+const uint8_t submenu_Y[]= {SUBMENU_Y0,SUBMENU_Y0,SUBMENU_Y0,SUBMENU_Y0,SUBMENU_Y1,SUBMENU_Y1,SUBMENU_Y1,SUBMENU_Y1};  // y location of the submenu titles by pixel
+const uint8_t submenu_value_Y[]= {SUBMENU_VALUE_Y0,SUBMENU_VALUE_Y0,SUBMENU_VALUE_Y0,SUBMENU_VALUE_Y0,SUBMENU_VALUE_Y1,SUBMENU_VALUE_Y1,SUBMENU_VALUE_Y1,SUBMENU_VALUE_Y1};  // y location of the submenu values by pixel
 
 enum paramtype{TYPE_NONE,TYPE_INTEGER,TYPE_FLOAT, TYPE_TEXT}; // parameter display types
 
@@ -86,7 +90,7 @@ void dummy( void) {}
 const char * textoffon[] = {" OFF", "  ON"};
 //{CHROMATIC,MAJOR,MINOR,HARMONIC_MINOR,MAJOR_PENTATONIC,MINOR_PENTATONIC,DORIAN,PHRYGIAN,LYDIAN,MIXOLYDIAN};
 const char * scalenames[] = {"Chro","Maj", "Min","Hmin","MPen","mPen","Dor","Phry","Lyd","Mixo"};
-const char * textrates[] = {" 8x"," 6x"," 4x"," 3x", " 2x","1.5x"," 1x","/1.5"," /2"," /3"," /4"," /8"," /16"};
+const char * textrates[] = {" 8x"," 6x"," 4x"," 3x", " 2x","1.5x"," 1x","/1.5"," /2"," /3"," /4"," /5"," /6"," /7"," /8"," /9"," /10"," /11"," /12"," /13"," /14"," /15"," /16"," /32"," /64","/128"};
 
 // NOTE that the order and number of the text menus much match the graphical UI pages
 // ie we keep the graphic display and its associated text menus in sync - uses variable UIpage for main menus - notes, gates etc
@@ -94,7 +98,7 @@ const char * textrates[] = {" 8x"," 6x"," 4x"," 3x", " 2x","1.5x"," 1x","/1.5","
 // menus are created at compile time so we have to point to each sequencer array parameter individually
 struct submenu note1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&notes[0].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&notes[0].divider,0,
   "ROOT","MIDI Root Note",1,115,1,TYPE_INTEGER,0,&notes[0].root,0,
   "SCAL","Scale",0,9,1,TYPE_TEXT,scalenames,&current_scale[0],0,
   "CHAN","MIDI Channel",1,16,1,TYPE_INTEGER,0,&MIDIchannel[0],0,
@@ -105,7 +109,7 @@ struct submenu note1params[] = {
 
 struct submenu note2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&notes[1].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&notes[1].divider,0,
   "ROOT","MIDI Root Note",1,115,1,TYPE_INTEGER,0,&notes[1].root,0,
   "SCAL","Scale",0,9,1,TYPE_TEXT,scalenames,&current_scale[1],0,
   "CHAN","MIDI Channel",1,16,1,TYPE_INTEGER,0,&MIDIchannel[1],0,
@@ -115,7 +119,7 @@ struct submenu note2params[] = {
 };
 struct submenu note3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&notes[2].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&notes[2].divider,0,
   "ROOT","MIDI Root Note",1,115,1,TYPE_INTEGER,0,&notes[2].root,0, 
   "SCAL","Scale",0,9,1,TYPE_TEXT,scalenames,&current_scale[2],0,
   "CHAN","MIDI Channel",1,16,1,TYPE_INTEGER,0,&MIDIchannel[2],0,
@@ -125,7 +129,7 @@ struct submenu note3params[] = {
 };
 struct submenu note4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&notes[3].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&notes[3].divider,0,
   "ROOT","MIDI Root Note",1,115,1,TYPE_INTEGER,0,&notes[3].root,0,
   "SCAL","Scale",0,9,1,TYPE_TEXT,scalenames,&current_scale[3],0,
   "CHAN","MIDI Channel",1,16,1,TYPE_INTEGER,0,&MIDIchannel[3],0,
@@ -136,79 +140,79 @@ struct submenu note4params[] = {
 
 struct submenu gate1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&gates[0].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&gates[0].divider,0,
 };
 struct submenu gate2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&gates[1].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&gates[1].divider,0,
 };
 struct submenu gate3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&gates[2].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&gates[2].divider,0,
 };
 struct submenu gate4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&gates[3].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&gates[3].divider,0,
 };
 
 struct submenu velocity1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&velocities[0].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&velocities[0].divider,0,
 };
 struct submenu velocity2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&velocities[1].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&velocities[1].divider,0,
 };
 struct submenu velocity3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&velocities[2].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&velocities[2].divider,0,
 };
 struct submenu velocity4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&velocities[3].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&velocities[3].divider,0,
 };
 
 struct submenu offset1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&offsets[0].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&offsets[0].divider,0,
 };
 struct submenu offset2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&offsets[1].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&offsets[1].divider,0,
 };
 struct submenu offset3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&offsets[2].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&offsets[2].divider,0,
 };
 struct submenu offset4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&offsets[3].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&offsets[3].divider,0,
 };
 
 struct submenu probability1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&probability[0].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&probability[0].divider,0,
   " LEN","Eucl Length",1,16,1,TYPE_INTEGER,0,&probability[0].euclen,eucprobability,
   "BEAT","Eucl Beats",1,16,1,TYPE_INTEGER,0,&probability[0].eucbeats,eucprobability,
   "OFFS","Eucl Offset",0,15,1,TYPE_INTEGER,0,&probability[0].root,eucprobability,
 };
 struct submenu probability2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&probability[1].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&probability[1].divider,0,
   " LEN","Eucl Length",1,16,1,TYPE_INTEGER,0,&probability[1].euclen,eucprobability,
   "BEAT","Eucl Beats",1,16,1,TYPE_INTEGER,0,&probability[1].eucbeats,eucprobability,
   "OFFS","Eucl Offset",0,15,1,TYPE_INTEGER,0,&probability[1].root,eucprobability,
 };
 struct submenu probability3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&probability[2].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&probability[2].divider,0,
   " LEN","Eucl Length",1,16,1,TYPE_INTEGER,0,&probability[2].euclen,eucprobability,
   "BEAT","Eucl Beats",1,16,1,TYPE_INTEGER,0,&probability[2].eucbeats,eucprobability,
   "OFFS","Eucl Offset",0,15,1,TYPE_INTEGER,0,&probability[2].root,eucprobability,
 };
 struct submenu probability4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&probability[3].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&probability[3].divider,0,
   " LEN","Eucl Length",1,16,1,TYPE_INTEGER,0,&probability[3].euclen,eucprobability,
   "BEAT","Eucl Beats",1,16,1,TYPE_INTEGER,0,&probability[3].eucbeats,eucprobability,
   "OFFS","Eucl Offset",0,15,1,TYPE_INTEGER,0,&probability[3].root,eucprobability,
@@ -216,45 +220,45 @@ struct submenu probability4params[] = {
 
 struct submenu ratchet1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&ratchets[0].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&ratchets[0].divider,0,
 };
 struct submenu ratchet2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&ratchets[1].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&ratchets[1].divider,0,
 };
 struct submenu ratchet3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&ratchets[2].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&ratchets[2].divider,0,
 };
 struct submenu ratchet4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&ratchets[3].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&ratchets[3].divider,0,
 };
 
 struct submenu mod1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&mods[0].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&mods[0].divider,0,
   "CHAN","CC MIDI Channel",1,16,1,TYPE_INTEGER,0,&CCchannel[0],0,
   "  CC","CC Number",0,127,1,TYPE_INTEGER,0,&mods[0].root,0,
   "ENAB","Mod On/Off",0,1,1,TYPE_TEXT,textoffon,&mod_enabled[0],0,
 };
 struct submenu mod2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&mods[1].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&mods[1].divider,0,
   "CHAN","CC MIDI Channel",1,16,1,TYPE_INTEGER,0,&CCchannel[1],0,
   "  CC","CC Number",0,127,1,TYPE_INTEGER,0,&mods[1].root,0,
   "ENAB","Mod On/Off",0,1,1,TYPE_TEXT,textoffon,&mod_enabled[1],0,
 };
 struct submenu mod3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&mods[2].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&mods[2].divider,0,
   "CHAN","CC MIDI Channel",1,16,1,TYPE_INTEGER,0,&CCchannel[2],0,
   "  CC","CC Number",0,127,1,TYPE_INTEGER,0,&mods[3].root,0,
   "ENAB","Mod On/Off",0,1,1,TYPE_TEXT,textoffon,&mod_enabled[2],0,
 };
 struct submenu mod4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
-  "RATE","Clock Rate",0,12,-1,TYPE_TEXT,textrates,&mods[3].divider,0,
+  "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&mods[3].divider,0,
   "CHAN","CC MIDI Channel",1,16,1,TYPE_INTEGER,0,&CCchannel[3],0,
   "  CC","CC Number",0,127,1,TYPE_INTEGER,0,&mods[3].root,0,
   "ENAB","Mod On/Off",0,1,1,TYPE_TEXT,textoffon,&mod_enabled[3],0,
@@ -323,20 +327,21 @@ void drawtopmenu( int8_t index) {
 
 // display a sub menu item and its value
 // index is the index into the current top menu's submenu array
-// pos is the relative x location on the screen ie field 0,1,2 or 3 
+// pos is the relative x location on the screen ie field 0,1,2,3,4,5,6,7
+// for the Pico sequencer 0-3 shown on top, 4-7 shown on the bottom of the display - we have lots of encoders to use for editing
 void drawsubmenu( int8_t index, int8_t pos) {
     submenu * sub;
     // print the name text
     //display.setCursor ((DISPLAY_X/SUBMENU_FIELDS)*pos*DISPLAY_CHAR_WIDTH+DISPLAY_X_MENUPAD, SUBMENU_Y ); // set cursor to parameter name field - staggered short names
-    display.setCursor (submenu_X[pos], SUBMENU_Y); // set cursor to parameter name field - staggered long names
+    display.setCursor (submenu_X[pos], submenu_Y[pos]); // set cursor to parameter name field - staggered long names
     sub=topmenu[topmenuindex].submenus; //get pointer to the submenu array
     if (index < topmenu[topmenuindex].numsubmenus) display.print(sub[index].name); // make sure we aren't beyond the last parameter in this submenu
     else display.print("     ");
     
     // print the value
-    display.setCursor (submenu_X[pos], SUBMENU_VALUE_Y ); // set cursor to parameter value field
+    display.setCursor (submenu_X[pos], submenu_value_Y[pos]); // set cursor to parameter value field
     display.print("     "); // erase old value
-    display.setCursor (submenu_X[pos], SUBMENU_VALUE_Y ); // set cursor to parameter value field
+    display.setCursor (submenu_X[pos], submenu_value_Y[pos] ); // set cursor to parameter value field
     if ((sub[index].step !=0) && (index < topmenu[topmenuindex].numsubmenus)) { // don't print dummy parameter or beyond the last submenu item
       int16_t val=*sub[index].parameter;  // fetch the parameter value   // 
       //if (val> sub[index].max) *sub[index].parameter=val=sub[index].max; // check the parameter range and limit if its out of range ie we loaded a bad patch
@@ -418,24 +423,15 @@ void erasemessage(void) {
 void domenus(void) {
   int16_t encoder;
   int8_t index; 
-  int16_t encodervalue[4]; 
+  int16_t encodervalue[SUBMENU_FIELDS]; // each encoder changes one parameter
   ClickEncoder::Button button; 
   // process the menu encoder - scroll submenus, scroll main menu when button down
   encoder=menuenc.getValue(); // compiler bug - can't do this inside the if statement
-
+/*
   if ( enc != 0) {  // if encoder is rotated, side scroll to more menu parameters if there are any
       scrollsubmenus(encoder);           
   }
-
-
-// process parameter encoder buttons - button gestures are used as shortcuts/alternatives to using main encoder
-// hold button and rotate to scroll submenus 
-/*
-  if (enc[P0].getButton() == ClickEncoder::Closed) scrollsubmenus(enc[P0].getValue());  // if button pressed, side scroll submenus
-  if (enc[P1].getButton() == ClickEncoder::Closed) scrollsubmenus(enc[P1].getValue());
-  if (enc[P2].getButton() == ClickEncoder::Closed) scrollsubmenus(enc[P2].getValue());
-  if (enc[P3].getButton() == ClickEncoder::Closed) scrollsubmenus(enc[P3].getValue());
- */
+*/
 
   index= topmenu[topmenuindex].submenuindex; // submenu field index
   submenu * sub=topmenu[topmenuindex].submenus; //get pointer to the current submenu array
@@ -446,8 +442,12 @@ void domenus(void) {
   encodervalue[1]=enc[P1].getValue();
   encodervalue[2]=enc[P2].getValue();
   encodervalue[3]=enc[P3].getValue();
+  encodervalue[4]=enc[P4].getValue();  // read encoders
+  encodervalue[5]=enc[P5].getValue();
+  encodervalue[6]=enc[P6].getValue();
+  encodervalue[7]=enc[P7].getValue();
 
-  for (int field=0; field<4;++field) { // loop thru the on screen submenus
+  for (int field=0; field<SUBMENU_FIELDS;++field) { // loop thru the on screen submenus
     if (encodervalue[field]!=0) {  // if there is some input, process it
       int16_t temp=*sub[index].parameter + encodervalue[field]*sub[index].step; // menu code uses ints - convert to floats when needed
       if (temp < (int16_t)sub[index].min) temp=sub[index].min;
@@ -459,6 +459,7 @@ void domenus(void) {
       erasemessage(); // undraw old longname
       showmessage(sub[index].longname);  // show the long name of what we are editing
       drawsubmenu(index,field);
+      //Serial.printf("index %d field %d\n",index,field);
     }
     ++index;
     if (index >= topmenu[topmenuindex].numsubmenus) break; // check that we have not run out of submenus

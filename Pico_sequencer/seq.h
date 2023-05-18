@@ -19,8 +19,8 @@ int16_t active_velocity[NTRACKS]; // velocity of the active note
 int16_t active_notelength[NTRACKS]; //length of the active note in ms
 bool tie[NTRACKS];  // flag that a tied note is in progress
 int16_t ratchetcnt[NTRACKS]; // number of ratchets for the note 
-// const char * textrates[] = {" 8x"," 6x"," 4x"," 3x", " 2x","1.5x"," 1x","/1.5"," /2"," /3"," /4"," /8"," /16"};
-int16_t divtable[] = {3,4,6,8,12,16,24,36,48,72,96,192,384};
+// const char * textrates[] = {" 8x"," 6x"," 4x"," 3x", " 2x","1.5x"," 1x","/1.5"," /2"," /3"," /4"," /5"," /6"," /7"," /8"," /9"," /10"," /11"," /12"," /13"," /14"," /15"," /16"," /32"," /64"," /128"};
+int16_t divtable[] = {3,4,6,8,12,16,24,36,48,72,96,120,144,168,192,216,240,264,288,312,336,360,384,768,1536,3072};
 
 int16_t lastCC[NTRACKS]; // we save the last CC message - reduce MIDI traffic by not sending the same message twice 
 
@@ -445,9 +445,9 @@ void clocktick (long clockperiod) {
     // check if gate became active and if so send note on
     if (gatestate && trackenabled[track] && (probability[track].val[probability[track].index] > random(PROBABILITYRANGE-1))) {
       active_notelength[track]=clockperiod*gates[track].val[gates[track].index]*gates[track].divider/GATERANGE;     // calculate notelength is ms from gate length
-      ratchetcnt[track]=ratchets[track].val[ratchets[track].index];
+      if(ratchets[track].val[ratchets[track].index] >0) ratchetcnt[track]=(ratchets[track].val[ratchets[track].index]+1)*2-1; // for 1 ratchet the count is 3(noteon) 2 (noteoff) 1 (noteon) 0 (noteoff)
       if ((active_notelength[track] > 0) && (ratchetcnt[track] > 0)) { // if we have ratchets divide up the notelength to the number of ratchets
-        active_notelength[track]=clockperiod*gates[track].divider/(ratchetcnt[track]*2); // for 1 ratchet (2 notes) divide the note time in two and send noteon/noteoff at the halfway point ie 100% gate 
+        active_notelength[track]=clockperiod*gates[track].divider/(ratchetcnt[track]+1); // for 1 ratchet (2 notes) divide the note time in four and send noteon/noteoff when the count changes ie 50% gate 
       }
       notetimer[track]=millis()+active_notelength[track];
       if ((active_notelength[track] > 0) && (!tie[track])) {  // no note on when gate is zero or a tied note is in progress
@@ -464,21 +464,22 @@ void clocktick (long clockperiod) {
     }
 
     // process note offs and ratchets
-    // this code produces 100% gate time on ratchets
-// ie a noteoff immediately followed by a noteon
-// addtional logic needed to handle gate times less than 100% but this works OK
+    // the code produces 50% gate time on ratchets
+    // this was hard to get right! maybe should be a state machine
+
     if (millis() > notetimer[track]) { // if note timer has expired
       if (active_note[track] && (!tie[track])) {
-        noteOff(MIDIchannel[track]-1,active_note[track],0); // turn the note off
-        //Serial.printf("noteoff %d\n",active_note);
+        if (ratchetcnt[track] >0) { // we are ratcheting
+          if (ratchetcnt[track] & 1) noteOff(MIDIchannel[track]-1,active_note[track],0); // ratcheting - note off on odd ratchet counts
+        }
+        else noteOff(MIDIchannel[track]-1,active_note[track],0); // not ratcheting, turn note off
         if (ratchetcnt[track]==0) active_note[track]=0;  // its the last ratchet
         else notetimer[track]=millis()+active_notelength[track]; // schedule another
       }
       if (ratchetcnt[track] && active_note[track]) {  // we are ratcheting so send another note on
-        noteOn(MIDIchannel[track]-1,active_note[track],active_velocity[track]);
+        if (!(ratchetcnt[track] &1)) noteOn(MIDIchannel[track]-1,active_note[track],active_velocity[track]); // send noteon every 2nd count
         //Serial.printf("noteon %d\n",active_note);
-        --ratchetcnt[track];
-        notetimer[track]=millis()+active_notelength[track];
+        if ((--ratchetcnt[track]) == 0) active_note[track]=0;
       }     
     }
 

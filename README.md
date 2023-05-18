@@ -18,7 +18,7 @@ Clock rate is set in the associated menu.
 * Probability sequencer - this sequencer determines the probability that the note will play. Probability is displayed as vertical bars-longer bar indicates higher probability, range 0 to 100% on 10% increments. 
 You can create euclidean rhythm patterns in the probability sequencer by setting the eulidean length, beats and offset in the associated menu. Probability clock rate is also set in the associated menu.
 	
-* Ratchet sequencer - you can add ratchets (repeats) to any step by adjusting the vertical bar for that step with its encoder. Ratchets range from no repeats (default) to 4 repeats. Ratcheting works by subdividing the gate period by the number of ratchets on that step. 
+* Ratchet sequencer - you can add ratchets (repeats) to any step by adjusting the vertical bar for that step with its encoder. Ratchets range from no repeats (default) to 3 repeats. Ratcheting works by subdividing the gate period by the number of ratchets on that step. 
 This does not currently work with tied steps however. Ratchet clock rate is also set in the associated menu. Note that the clock rate affects the rate at which the ratchet sequencer advances, not the rate of ratcheting.
 
 * Modulation sequencer - Sends CC messages to the host which can be used to modulate synth filter cutoff etc. Modulation (CC value) is displayed as vertical bars with values from 0-127. CC messages are only sent when values change to minimize MIDI traffic. 
