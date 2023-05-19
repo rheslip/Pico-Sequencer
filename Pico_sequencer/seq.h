@@ -10,7 +10,7 @@
 #define MODRANGE 127  // modulation range 0-127
 
 // clock related stuff
-enum STEPMODE {FORWARD,BACKWARD,PINGPONG,DRUNK,RANDOM,EUCLIDEAN};
+enum STEPMODE {FORWARD,BACKWARD,PINGPONG,RANDOMWALK,RANDOM};
 
 long clocktimer = 0; // clock rate in ms
 long notetimer[NTRACKS]={0,0,0,0}; // note off timer
@@ -34,7 +34,8 @@ struct sequencer {
   int16_t val[SEQ_STEPS];  // values of note offsets from root, gate lengths etc. 
   int16_t max;    // maximum positive value of val - used for UI scaling
   int16_t index;    // index of step we are on
-  int16_t stepmode;    // step mode - fwd, backward etc   
+  int16_t stepmode;    // step mode - fwd, backward etc
+  int16_t state;    // state - used for step modes  
   int16_t first;  // first step used - anything used my the menusystem has to be integer type
   int16_t last;   // last step used
   int16_t euclen;   // euclidean length
@@ -50,6 +51,7 @@ sequencer notes[NTRACKS] = {
   NOTERANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -62,6 +64,7 @@ sequencer notes[NTRACKS] = {
   NOTERANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -74,6 +77,7 @@ sequencer notes[NTRACKS] = {
   NOTERANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -86,6 +90,7 @@ sequencer notes[NTRACKS] = {
   NOTERANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -101,6 +106,7 @@ sequencer offsets[NTRACKS] = {
   NOTERANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -113,6 +119,7 @@ sequencer offsets[NTRACKS] = {
   NOTERANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -125,6 +132,7 @@ sequencer offsets[NTRACKS] = {
   NOTERANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -137,6 +145,7 @@ sequencer offsets[NTRACKS] = {
   NOTERANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -151,6 +160,7 @@ sequencer gates[NTRACKS] = {
   GATERANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -163,6 +173,7 @@ sequencer gates[NTRACKS] = {
   GATERANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -175,6 +186,7 @@ sequencer gates[NTRACKS] = {
   GATERANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -187,6 +199,7 @@ sequencer gates[NTRACKS] = {
   GATERANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -201,6 +214,7 @@ sequencer ratchets[NTRACKS] = {
   RATCHETRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -213,6 +227,7 @@ sequencer ratchets[NTRACKS] = {
   RATCHETRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -225,6 +240,7 @@ sequencer ratchets[NTRACKS] = {
   RATCHETRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -237,6 +253,7 @@ sequencer ratchets[NTRACKS] = {
   RATCHETRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -252,6 +269,7 @@ sequencer velocities[NTRACKS] = {
   VELOCITYRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -264,6 +282,7 @@ sequencer velocities[NTRACKS] = {
   VELOCITYRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -276,6 +295,7 @@ sequencer velocities[NTRACKS] = {
   VELOCITYRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -288,6 +308,7 @@ sequencer velocities[NTRACKS] = {
   VELOCITYRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -303,6 +324,7 @@ sequencer probability[NTRACKS] = {
   PROBABILITYRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -315,6 +337,7 @@ sequencer probability[NTRACKS] = {
   PROBABILITYRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -327,6 +350,7 @@ sequencer probability[NTRACKS] = {
   PROBABILITYRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -339,6 +363,7 @@ sequencer probability[NTRACKS] = {
   PROBABILITYRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -354,6 +379,7 @@ sequencer mods[NTRACKS] = {
   MODRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -366,6 +392,7 @@ sequencer mods[NTRACKS] = {
   MODRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -378,6 +405,7 @@ sequencer mods[NTRACKS] = {
   MODRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -390,6 +418,7 @@ sequencer mods[NTRACKS] = {
   MODRANGE,  // maximum value
   0,   // step index
   FORWARD, // step mode
+  0,     // state - used for step modes
   0,   // first step
   SEQ_STEPS-1,  // last step
   SEQ_STEPS, // euclidean length
@@ -409,17 +438,44 @@ int16_t seqclock(sequencer *seq) {
   int16_t event=0;
   --seq->clockticks;
   if (seq->clockticks < 1 ) { // divider has rolled over
-
     seq->clockticks=divtable[seq->divider];  // lookup table used to get clock divider
-//controlChange(8,16,seq->clockticks);
     event=1;
-    if (seq->stepmode == FORWARD) {
-      ++seq->index;
-      if (seq->index > seq->last)seq->index=seq->first;
-    }
-    if (seq->stepmode == BACKWARD) {
-      --seq->index;
-      if (seq->index < seq->first)seq->index=seq->last;
+    switch (seq->stepmode) {
+      case FORWARD:
+        ++seq->index;
+        if (seq->index > seq->last) seq->index=seq->first;
+        break;
+      case BACKWARD:
+        --seq->index;
+        if (seq->index < seq->first) seq->index=seq->last;
+        break;
+      case PINGPONG:
+        if (seq->state == FORWARD) {
+         ++seq->index;
+          if (seq->index > seq->last) {
+            seq->index=seq->last-1;
+            seq->index=constrain(seq->index,seq->first,seq->last);
+            seq->state=BACKWARD;
+          }
+        }
+        else {
+          --seq->index;
+          if (seq->index < seq->first) {
+            seq->index=seq->first+1;
+            seq->index=constrain(seq->index,seq->first,seq->last);
+            seq->state=FORWARD;
+          }
+        }
+        break;
+        case RANDOMWALK:
+          seq->index+=random(-1,2); // range of -1 to +1
+          seq->index=constrain(seq->index,seq->first,seq->last);
+        break;
+        case RANDOM:
+          seq->index=random(seq->first,seq->last);
+        break;        
+      default:
+        break;
     }
   }
   return event;

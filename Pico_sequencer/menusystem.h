@@ -88,6 +88,7 @@ void dummy( void) {}
 
 // text arrays used for submenu TYPE_TEXT fields
 const char * textoffon[] = {" OFF", "  ON"};
+const char * textstepmode[] = {" FWD", " REV","PONG","WALK","RAND"};
 //{CHROMATIC,MAJOR,MINOR,HARMONIC_MINOR,MAJOR_PENTATONIC,MINOR_PENTATONIC,DORIAN,PHRYGIAN,LYDIAN,MIXOLYDIAN};
 const char * scalenames[] = {"Chro","Maj", "Min","Hmin","MPen","mPen","Dor","Phry","Lyd","Mixo"};
 const char * textrates[] = {" 8x"," 6x"," 4x"," 3x", " 2x","1.5x"," 1x","/1.5"," /2"," /3"," /4"," /5"," /6"," /7"," /8"," /9"," /10"," /11"," /12"," /13"," /14"," /15"," /16"," /32"," /64","/128"};
@@ -99,6 +100,7 @@ const char * textrates[] = {" 8x"," 6x"," 4x"," 3x", " 2x","1.5x"," 1x","/1.5","
 struct submenu note1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&notes[0].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&notes[0].stepmode,0,
   "ROOT","MIDI Root Note",1,115,1,TYPE_INTEGER,0,&notes[0].root,0,
   "SCAL","Scale",0,9,1,TYPE_TEXT,scalenames,&current_scale[0],0,
   "CHAN","MIDI Channel",1,16,1,TYPE_INTEGER,0,&MIDIchannel[0],0,
@@ -110,6 +112,7 @@ struct submenu note1params[] = {
 struct submenu note2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&notes[1].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&notes[1].stepmode,0,
   "ROOT","MIDI Root Note",1,115,1,TYPE_INTEGER,0,&notes[1].root,0,
   "SCAL","Scale",0,9,1,TYPE_TEXT,scalenames,&current_scale[1],0,
   "CHAN","MIDI Channel",1,16,1,TYPE_INTEGER,0,&MIDIchannel[1],0,
@@ -120,6 +123,7 @@ struct submenu note2params[] = {
 struct submenu note3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&notes[2].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&notes[2].stepmode,0,
   "ROOT","MIDI Root Note",1,115,1,TYPE_INTEGER,0,&notes[2].root,0, 
   "SCAL","Scale",0,9,1,TYPE_TEXT,scalenames,&current_scale[2],0,
   "CHAN","MIDI Channel",1,16,1,TYPE_INTEGER,0,&MIDIchannel[2],0,
@@ -130,6 +134,7 @@ struct submenu note3params[] = {
 struct submenu note4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&notes[3].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&notes[3].stepmode,0,
   "ROOT","MIDI Root Note",1,115,1,TYPE_INTEGER,0,&notes[3].root,0,
   "SCAL","Scale",0,9,1,TYPE_TEXT,scalenames,&current_scale[3],0,
   "CHAN","MIDI Channel",1,16,1,TYPE_INTEGER,0,&MIDIchannel[3],0,
@@ -141,57 +146,70 @@ struct submenu note4params[] = {
 struct submenu gate1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&gates[0].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&gates[0].stepmode,0,
 };
 struct submenu gate2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&gates[1].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&gates[1].stepmode,0,
 };
 struct submenu gate3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&gates[2].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&gates[2].stepmode,0,
 };
 struct submenu gate4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&gates[3].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&gates[3].stepmode,0,
 };
 
 struct submenu velocity1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&velocities[0].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&velocities[0].stepmode,0,
 };
 struct submenu velocity2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&velocities[1].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&velocities[1].stepmode,0,
 };
 struct submenu velocity3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&velocities[2].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&velocities[2].stepmode,0,
 };
 struct submenu velocity4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&velocities[3].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&velocities[3].stepmode,0,
 };
 
 struct submenu offset1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&offsets[0].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&offsets[0].stepmode,0,
 };
 struct submenu offset2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&offsets[1].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&offsets[1].stepmode,0,
 };
 struct submenu offset3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&offsets[2].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&offsets[2].stepmode,0,
 };
 struct submenu offset4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&offsets[3].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&offsets[3].stepmode,0,
 };
 
 struct submenu probability1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&probability[0].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&probability[0].stepmode,0,
   " LEN","Eucl Length",1,16,1,TYPE_INTEGER,0,&probability[0].euclen,eucprobability,
   "BEAT","Eucl Beats",1,16,1,TYPE_INTEGER,0,&probability[0].eucbeats,eucprobability,
   "OFFS","Eucl Offset",0,15,1,TYPE_INTEGER,0,&probability[0].root,eucprobability,
@@ -199,6 +217,7 @@ struct submenu probability1params[] = {
 struct submenu probability2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&probability[1].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&probability[1].stepmode,0,
   " LEN","Eucl Length",1,16,1,TYPE_INTEGER,0,&probability[1].euclen,eucprobability,
   "BEAT","Eucl Beats",1,16,1,TYPE_INTEGER,0,&probability[1].eucbeats,eucprobability,
   "OFFS","Eucl Offset",0,15,1,TYPE_INTEGER,0,&probability[1].root,eucprobability,
@@ -206,6 +225,7 @@ struct submenu probability2params[] = {
 struct submenu probability3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&probability[2].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&probability[2].stepmode,0,
   " LEN","Eucl Length",1,16,1,TYPE_INTEGER,0,&probability[2].euclen,eucprobability,
   "BEAT","Eucl Beats",1,16,1,TYPE_INTEGER,0,&probability[2].eucbeats,eucprobability,
   "OFFS","Eucl Offset",0,15,1,TYPE_INTEGER,0,&probability[2].root,eucprobability,
@@ -213,6 +233,7 @@ struct submenu probability3params[] = {
 struct submenu probability4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&probability[3].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&probability[3].stepmode,0,
   " LEN","Eucl Length",1,16,1,TYPE_INTEGER,0,&probability[3].euclen,eucprobability,
   "BEAT","Eucl Beats",1,16,1,TYPE_INTEGER,0,&probability[3].eucbeats,eucprobability,
   "OFFS","Eucl Offset",0,15,1,TYPE_INTEGER,0,&probability[3].root,eucprobability,
@@ -221,23 +242,28 @@ struct submenu probability4params[] = {
 struct submenu ratchet1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&ratchets[0].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&ratchets[0].stepmode,0,
 };
 struct submenu ratchet2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&ratchets[1].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&ratchets[1].stepmode,0,
 };
 struct submenu ratchet3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&ratchets[2].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&ratchets[2].stepmode,0,
 };
 struct submenu ratchet4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&ratchets[3].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&ratchets[3].stepmode,0,
 };
 
 struct submenu mod1params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&mods[0].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&mods[0].stepmode,0,
   "CHAN","CC MIDI Channel",1,16,1,TYPE_INTEGER,0,&CCchannel[0],0,
   "  CC","CC Number",0,127,1,TYPE_INTEGER,0,&mods[0].root,0,
   "ENAB","Mod On/Off",0,1,1,TYPE_TEXT,textoffon,&mod_enabled[0],0,
@@ -245,6 +271,7 @@ struct submenu mod1params[] = {
 struct submenu mod2params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&mods[1].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&mods[1].stepmode,0,
   "CHAN","CC MIDI Channel",1,16,1,TYPE_INTEGER,0,&CCchannel[1],0,
   "  CC","CC Number",0,127,1,TYPE_INTEGER,0,&mods[1].root,0,
   "ENAB","Mod On/Off",0,1,1,TYPE_TEXT,textoffon,&mod_enabled[1],0,
@@ -252,6 +279,7 @@ struct submenu mod2params[] = {
 struct submenu mod3params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&mods[2].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&mods[2].stepmode,0,
   "CHAN","CC MIDI Channel",1,16,1,TYPE_INTEGER,0,&CCchannel[2],0,
   "  CC","CC Number",0,127,1,TYPE_INTEGER,0,&mods[3].root,0,
   "ENAB","Mod On/Off",0,1,1,TYPE_TEXT,textoffon,&mod_enabled[2],0,
@@ -259,6 +287,7 @@ struct submenu mod3params[] = {
 struct submenu mod4params[] = {
   // name,longname,min,max,step,type,*textfield,*parameter,*handler
   "RATE","Clock Rate",0,25,-1,TYPE_TEXT,textrates,&mods[3].divider,0,
+  "MODE","Step Mode",0,4,1,TYPE_TEXT,textstepmode,&mods[3].stepmode,0,
   "CHAN","CC MIDI Channel",1,16,1,TYPE_INTEGER,0,&CCchannel[3],0,
   "  CC","CC Number",0,127,1,TYPE_INTEGER,0,&mods[3].root,0,
   "ENAB","Mod On/Off",0,1,1,TYPE_TEXT,textoffon,&mod_enabled[3],0,
